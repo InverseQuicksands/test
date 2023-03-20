@@ -1,0 +1,3 @@
+rootProject.name = 'test-springboot'
+include 'test-aa'
+

@@ -1,0 +1,144 @@
+import java.text.SimpleDateFormat
+
+buildscript {
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            credentials {
+                username 'admin'
+                password 'zhang232625'
+            }
+            url "http://101.200.167.19:8081/nexus/content/groups/public/"
+        }
+    }
+
+    dependencies {
+        classpath('io.spring.dependency-management:io.spring.dependency-management.gradle.plugin:1.1.0')
+        classpath('org.springframework.boot:spring-boot-gradle-plugin:3.0.2')
+    }
+}
+
+configure(allprojects) { project ->
+    apply plugin: 'java-library'                                    //java插件
+    apply plugin: 'maven-publish'                                   //maven插件
+    apply plugin: 'idea'                                            //IDEA插件
+    apply plugin: 'org.springframework.boot'                        //spring boot插件
+
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
+    group 'com.brilliance.br.gateway'
+    version '1.0-SNAPSHOT'
+
+    //配置仓库
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            credentials {
+                username 'admin'
+                password 'zhang232625'
+            }
+            url "http://101.200.167.19:8081/nexus/content/groups/public/"
+        }
+    }
+
+    idea {
+        module {
+            downloadJavadoc = true;
+            downloadSources = true;
+        }
+    }
+
+    [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+    //在多模块下,授权打包依赖模块
+    jar {
+        enabled = true
+        archiveClassifier = ''
+        manifest {
+            attributes("Manifest-Version": "1.0")
+            attributes("Created-By": "Apache Gradle 7.5")
+            attributes("Implementation-Title": project.name)
+            attributes("Implementation-Version": project.version)
+            attributes("Build-Jdk": System.getProperty("java.version"))
+            attributes("Built-By": "qdeq")
+            attributes("Build-Date": (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date()))
+        }
+    }
+
+    bootJar {
+        enabled = false
+    }
+
+    dependencies {
+        implementation(enforcedPlatform("com.alibaba.cloud:spring-cloud-alibaba-dependencies:2021.0.4.0"))
+        implementation(enforcedPlatform("org.springframework.cloud:spring-cloud-dependencies:2021.0.5"))
+    }
+}
+
+configure(subprojects) { project ->
+    apply plugin: 'io.spring.dependency-management'
+
+    test {
+        useJUnitPlatform()
+        defaultCharacterEncoding = "UTF-8"
+    }
+
+    java {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    javadoc {
+        if(JavaVersion.current().isJava9Compatible()) {
+            options.addBooleanOption('html5', true)
+        }
+        options.memberLevel = JavadocMemberLevel.PRIVATE
+        options.encoding = "UTF-8";
+        options.locale = "zh_CN";// 可以省略
+    }
+
+
+    publishing {
+        repositories {
+            maven {
+                allowInsecureProtocol = true
+                credentials {
+                    username = "admin"
+                    password = "admin123"
+                }
+                def releasesUrl = "http://20.200.32.151:8081/nexus/content/repositories/releases/"
+                def snapshotsUrl = "http://20.200.32.151:8081/nexus/content/repositories/snapshots"
+                url = version.endsWith('SNAPSHOT') ? snapshotsUrl : releasesUrl
+            }
+        }
+
+        publications {
+            mavenJava(MavenPublication) {
+                //通过java-platform生成BOM
+                from components.java
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
+            }
+        }
+    }
+}
+
+bootJar {
+    enabled = false
+}
+jar {
+    enabled = false
+}
+
+
+
+
+
+
